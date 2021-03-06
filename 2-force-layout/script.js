@@ -11,66 +11,99 @@ d3.json('data/data.json')
 .then(function(data) {
     console.log(data);
 
+    let scaleLinear = d3.scaleLinear()
+        .domain(d3.extent(data.links, d => d.value))
+        .range([0.1, 1]);
+
+    // let scaleOpacity= d3.scaleLinear()
+    //     .domain(d3.extent(data.links, d => d.value))
+    //     .range([0.1, 1]);
+    
+    let simulation = d3.forceSimulation(data.nodes)
+        .force("center", d3.forceCenter(size.w/2, size.h/2))
+        .force("charge", d3.forceManyBody().strength(-20))
+        .force('link', d3.forceLink(data.links).id(d => d.id).strength(d => scaleLinear(d.value)));
+    
+    // d3.forceCenter().x(d=> d.col1)
+
+
     let colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
-    let simulation = d3.forceSimulation(data.nodes)
-        .force('link', d3.forceLink(data.links).id(d => d.id))
-        .force('charge', d3.forceManyBody())
-        .force('center', d3.forceCenter(size.w / 2, size.h / 2));
-
-    let link = svg.append('g')
-        .attr('stroke', '#999')
-        .attr('stroke-opacity', 0.6)
-        .selectAll('line')
+    let lines = containerG.selectAll('lines')
         .data(data.links)
         .join('line')
-        .attr('stroke-width', d => Math.sqrt(d.value));
+        .attr('stroke', 'darkgrey')
+        .attr('stroke-width',1)
+        // .attr('opacity', d => scaleOpacity())
+        // x1 y1 x2 y2
+        .attr('x1', d => Math.random() * size.w)
+        .attr('x2', d => Math.random() * size.w)
+        .attr('y1', d => Math.random() * size.w)
+        .attr('y2', d => Math.random() * size.w);
 
-    let node = svg.append('g')
-        .attr('stroke', '#fff')
-        .attr('stroke-width', 1.5)
-        .selectAll('circle')
+    let nodes = containerG.selectAll('circle')
         .data(data.nodes)
         .join('circle')
         .attr('r', 5)
-        .attr('fill', d => colorScale(d.group))
+        .attr('cx', d => Math.random() * size.w)
+        .attr('cy', d => Math.random() * size.h)
+        .style('fill', d => colorScale(d.group))
         .call(drag(simulation));
 
-    simulation.on('tick', () => {
-        link
+
+    simulation.on('tick', function () {
+        // console.log('tick');
+
+        nodes.attr('cx', d => d.x)
+            .attr('cy', d => d.y);
+
+        lines
             .attr('x1', d => d.source.x)
             .attr('y1', d => d.source.y)
             .attr('x2', d => d.target.x)
             .attr('y2', d => d.target.y);
-    
-        node
-            .attr('cx', d => d.x)
-            .attr('cy', d => d.y);
-        });
+
+    })
+
+
 });
 
 
 function drag(simulation) {
-  
-    function dragstarted(event) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
-      event.subject.fx = event.subject.x;
-      event.subject.fy = event.subject.y;
-    }
-    
-    function dragged(event) {
-      event.subject.fx = event.x;
-      event.subject.fy = event.y;
-    }
-    
-    function dragended(event) {
-      if (!event.active) simulation.alphaTarget(0);
-      event.subject.fx = null;
-      event.subject.fy = null;
-    }
-    
+
+    // console.log(1)
+
+    let dragStarted = function(event) {
+        
+        // console.log(1)
+
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+
+        
+    };
+
+    let dragged = function(event) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+
+    };
+
+    let dragEnded = function(event) {
+        if(!event.active) simulation.alphaTarget(0);
+        event.subject.fx = null;
+        event.subject.fy = null;
+
+    };
+
     return d3.drag()
-        .on('start', dragstarted)
+        .on('start', dragStarted)
         .on('drag', dragged)
-        .on('end', dragended);
-  }
+        .on('end', dragEnded);
+
+
+
+}
+
+

@@ -89,6 +89,10 @@ function drawHexbins(scale = 1) {
     let hexbinG = containerG.selectAll('g.hexbin').data([1])
         .join('g').classed('hexbin', true);
 
+    // d3.scaleOrdinal()
+        // .domain(['value1', 'value2'])
+        // .range(['stripes', 'circles'])
+
     // creating the hexagonal paths
     hexbinG.selectAll('path')
         .data(hexbinPopData)
@@ -97,7 +101,18 @@ function drawHexbins(scale = 1) {
         .duration(0.2)
         .attr('transform', d => `translate(${d.x}, ${d.y})`)
         .attr('d', d => hexbin.hexagon(20/scale))
-        .style('fill', d => colorScale(d.meanAge));
+        // .style('fill', d => colorScale(d.meanAge))
+        .attr('stroke', d=> colorScale(d.meanAge))
+        .attr("stroke-width", 1)
+        .style("fill", d => {
+            if (d.meanAge < 20) {
+                return 'url(#diagonal-stripe-6)';
+            } else if (d.meanAge < 40) {
+                return 'url(#vertical-stripe-2)';
+            } else if (d.meanAge < 60) {
+                return 'url(#crosshatch)';
+            }
+        });
 }
 
 function zoomed(event) {

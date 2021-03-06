@@ -9,42 +9,22 @@ const containerG = svg.append('g').classed('container', true);
 
 d3.json('data/data.json')
 .then(function(data) {
-    console.log(data.nodes);
-    data.nodes.forEach(d => { d.value = 5 + Math.random()*10; });
+    console.log(data);
 
-    
     let colorScale = d3.scaleOrdinal(d3.schemeCategory10);
-    let scaleX = d3.scaleBand()
-      .domain([...Array(11).keys()])
-      .range([margin.l, size.w-margin.r]);
-
-    
-    let objMax = {};
-
-    let groups = new Set(data.nodes.map(d => d.group))
-    groups = Array.from(groups);
-
-    groups.forEach(groupNo => {
-      let groupData = data.nodes.filter(d => +d.group === groupNo);
-      let maxVal = d3.max(groupData, d => d.value);
-      objMax['g' + groupNo] = maxVal;
-    })
-
-    data.nodes.forEach(node => {
-      if (objMax['g'+node.group] === node.value) {
-        
-        node.fx = scaleX(node.group);
-        node.fy = 20;
-      }
-    })
 
     let simulation = d3.forceSimulation(data.nodes)
-      // .force("center")
-      .force('collide', d3.forceCollide().radius(d => d.value))
-      .force('charge', d3.forceManyBody().strength(0.3))
-      .force('x', d3.forceX().x(d => scaleX(d.group)))
-      .force('y', d3.forceY().y(size.h/2));
+        .force('link', d3.forceLink(data.links).id(d => d.id))
+        .force('charge', d3.forceManyBody())
+        .force('center', d3.forceCenter(size.w / 2, size.h / 2));
 
+    let link = svg.append('g')
+        .attr('stroke', '#999')
+        .attr('stroke-opacity', 0.6)
+        .selectAll('line')
+        .data(data.links)
+        .join('line')
+        .attr('stroke-width', d => Math.sqrt(d.value));
 
     let node = svg.append('g')
         .attr('stroke', '#fff')
@@ -52,12 +32,17 @@ d3.json('data/data.json')
         .selectAll('circle')
         .data(data.nodes)
         .join('circle')
-        .attr('yy', d => d.group)
-        .attr('r', d => d.value)
+        .attr('r', 5)
         .attr('fill', d => colorScale(d.group))
         .call(drag(simulation));
 
     simulation.on('tick', () => {
+        link
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+    
         node
             .attr('cx', d => d.x)
             .attr('cy', d => d.y);
